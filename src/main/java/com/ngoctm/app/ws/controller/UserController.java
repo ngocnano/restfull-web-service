@@ -7,6 +7,7 @@ import com.ngoctm.app.ws.shared.dto.UserDto;
 import org.springframework.beans.BeanUtils;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -17,17 +18,19 @@ public class UserController {
     @Autowired
     UserService userService;
 
-    @GetMapping("/{id}")
-    public ResponseEntity<UserRest> getUser(@PathVariable("id") String id){
+    @GetMapping(value = "/{id}",
+            produces = {MediaType.APPLICATION_XML_VALUE, MediaType.APPLICATION_JSON_VALUE})
+    public ResponseEntity<UserRest> getUser(@PathVariable("id") String id) {
         UserDto userDto = userService.getUserByUserId(id);
 
         UserRest userRest = new UserRest();
         BeanUtils.copyProperties(userDto, userRest);
-        return new ResponseEntity<UserRest>(userRest, HttpStatus.OK);
+        return new ResponseEntity<>(userRest, HttpStatus.OK);
     }
 
-    @PostMapping
-    public ResponseEntity<UserRest> createUser(@RequestBody UserDetailRequestModel user){
+    @PostMapping(produces = {MediaType.APPLICATION_XML_VALUE, MediaType.APPLICATION_JSON_VALUE},
+            consumes = {MediaType.APPLICATION_XML_VALUE, MediaType.APPLICATION_JSON_VALUE})
+    public ResponseEntity<UserRest> createUser(@RequestBody UserDetailRequestModel user) {
         UserRest returnValue = new UserRest();
         UserDto userDto = new UserDto();
         BeanUtils.copyProperties(user, userDto);
@@ -35,11 +38,20 @@ public class UserController {
         UserDto createUser = userService.create(userDto);
         BeanUtils.copyProperties(createUser, returnValue);
 
-        return new ResponseEntity<UserRest>(returnValue, HttpStatus.CREATED);
+        return new ResponseEntity<>(returnValue, HttpStatus.CREATED);
     }
 
-    @PutMapping("/{id}")
-    public String updateUser(@PathVariable String id){
-        return null;
+    @PutMapping(path = "/{id}",
+            produces = {MediaType.APPLICATION_XML_VALUE, MediaType.APPLICATION_JSON_VALUE},
+            consumes = {MediaType.APPLICATION_XML_VALUE, MediaType.APPLICATION_JSON_VALUE})
+    public ResponseEntity<UserRest> updateUser(@PathVariable String id, @RequestBody UserDetailRequestModel requestModel) {
+        UserDto userDto = new UserDto();
+        BeanUtils.copyProperties(requestModel, userDto);
+
+        UserDto updatedUser = userService.updateUser(id, userDto);
+        UserRest userRest = new UserRest();
+        BeanUtils.copyProperties(updatedUser, userRest);
+        
+        return new ResponseEntity<>(userRest, HttpStatus.OK);
     }
 }

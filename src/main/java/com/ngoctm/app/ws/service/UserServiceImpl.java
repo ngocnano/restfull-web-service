@@ -1,6 +1,8 @@
 package com.ngoctm.app.ws.service;
 
 import com.ngoctm.app.ws.entity.UserEntity;
+import com.ngoctm.app.ws.exceptions.UserServiceException;
+import com.ngoctm.app.ws.model.response.ErrorMessages;
 import com.ngoctm.app.ws.repository.UserRepository;
 import com.ngoctm.app.ws.shared.dto.UserDto;
 import org.springframework.beans.BeanUtils;
@@ -45,7 +47,7 @@ public class UserServiceImpl implements UserService{
     @Override
     public UserDto getUserByEmail(String email) {
         UserEntity userEntity = userRepository.findByEmail(email);
-        if(userEntity == null) throw new UsernameNotFoundException(email);
+        if(userEntity == null) throw new UserServiceException(ErrorMessages.NO_RECORD_FOUND.getMessage());
 
         UserDto userDto = new UserDto();
         BeanUtils.copyProperties(userEntity, userDto);
@@ -56,7 +58,7 @@ public class UserServiceImpl implements UserService{
     @Override
     public UserDto getUserByUserId(String id) {
         UserEntity userEntity = userRepository.findByUserId(id);
-        if(userEntity == null) throw new UsernameNotFoundException(id);
+        if(userEntity == null) throw new UserServiceException(ErrorMessages.NO_RECORD_FOUND.getMessage());
 
         UserDto userDto = new UserDto();
         BeanUtils.copyProperties(userEntity, userDto);
@@ -64,9 +66,24 @@ public class UserServiceImpl implements UserService{
     }
 
     @Override
+    public UserDto updateUser(String id, UserDto userDto) {
+        UserEntity userEntity = userRepository.findByUserId(id);
+        if(userEntity == null) throw new UserServiceException(ErrorMessages.NO_RECORD_FOUND.getMessage());
+
+        userEntity.setFirstName(userDto.getFirstName());
+        userEntity.setLastName(userDto.getLastName());
+
+        UserEntity updatedUser = userRepository.save(userEntity);
+        UserDto returnValue = new UserDto();
+        BeanUtils.copyProperties(updatedUser, returnValue);
+
+        return returnValue;
+    }
+
+    @Override
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
         UserEntity userEntity = userRepository.findByEmail(email);
-        if(userEntity == null) throw new UsernameNotFoundException(email);
+        if(userEntity == null) throw new UserServiceException(ErrorMessages.NO_RECORD_FOUND.getMessage());
         return new User(userEntity.getEmail(), userEntity.getEncryptedPassword(), new ArrayList<>());
     }
 }
