@@ -29,4 +29,13 @@ public class Utils {
 
         return token;
     }
+
+    public static String generatePasswordResetToken(String userId) {
+        String token = Jwts.builder()
+                .setSubject(userId)
+                .setExpiration(new Date(System.currentTimeMillis() + SecurityConstants.EXPIRATION_TIME_RESET_PASSWORD))
+                .signWith(SignatureAlgorithm.HS512, SecurityConstants.TOKEN_SECRET)
+                .compact();
+        return token;
+    }
 }

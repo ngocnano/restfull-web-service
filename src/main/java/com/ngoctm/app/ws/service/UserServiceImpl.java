@@ -1,9 +1,11 @@
 package com.ngoctm.app.ws.service;
 
 import com.ngoctm.app.ws.entity.AddressEntity;
+import com.ngoctm.app.ws.entity.PasswordResetTokenEntity;
 import com.ngoctm.app.ws.entity.UserEntity;
 import com.ngoctm.app.ws.exceptions.UserServiceException;
 import com.ngoctm.app.ws.model.response.ErrorMessages;
+import com.ngoctm.app.ws.repositories.PasswordResetTokenRepository;
 import com.ngoctm.app.ws.repositories.UserRepository;
 import com.ngoctm.app.ws.shared.AmazonSES;
 import com.ngoctm.app.ws.shared.Utils;
@@ -33,6 +35,9 @@ public class UserServiceImpl implements UserService{
 
     @Autowired
     BCryptPasswordEncoder bCryptPasswordEncoder;
+
+    @Autowired
+    PasswordResetTokenRepository passwordResetTokenRepository;
 
     @Override
     public List<UserDto> getUsers(int page, int limit) {
@@ -139,6 +144,46 @@ public class UserServiceImpl implements UserService{
             }
         }
 
+        return returnValue;
+    }
+
+    @Override
+    public boolean requestPasswordReset(String email) {
+        boolean returnValue = false;
+        UserEntity userEntity = userRepository.findByEmail(email);
+        if (userEntity != null){
+            String token = Utils.generatePasswordResetToken(userEntity.getUserId());
+            PasswordResetTokenEntity resetTokenEntity = new PasswordResetTokenEntity();
+            resetTokenEntity.setToken(token);
+            resetTokenEntity.setUserEntity(userEntity);
+            passwordResetTokenRepository.save(resetTokenEntity);
+            AmazonSES amazonSES = new AmazonSES();
+            amazonSES.sendResetPassword(userEntity.getEmail(), token, userEntity.getFirstName());
+            returnValue = true;
+            return returnValue;
+        }
+
+        return returnValue;
+    }
+
+    @Override
+    public boolean resetPassword(String password, String token) {
+        boolean returnValue = false;
+
+        if(Utils.hasTokenExpired(token)){
+            return returnValue;
+        }
+
+        PasswordResetTokenEntity passwordResetTokenEntity = passwordResetTokenRepository.findByToken(token);
+        String encodePassword = bCryptPasswordEncoder.encode(password);
+
+        UserEntity userEntity = passwordResetTokenEntity.getUserEntity();
+        userEntity.setEncryptedPassword(encodePassword);
+        UserEntity saveUser = userRepository.save(userEntity);
+        if(saveUser != null){
+            passwordResetTokenRepository.delete(passwordResetTokenEntity);
+            returnValue = true;
+        }
         return returnValue;
     }
 

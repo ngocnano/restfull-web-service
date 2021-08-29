@@ -7,11 +7,13 @@ import java.util.List;
 
 public interface UserService extends UserDetailsService {
 
-    public List<UserDto> getUsers(int page, int limit);
-    public UserDto create(UserDto userDto);
-    public UserDto getUserByEmail(String email);
-    public UserDto getUserByUserId(String id);
-    public UserDto updateUser(String id, UserDto userDto);
-    public void DeleteUser(String id);
-    public boolean verifyEmailToken(String token);
+    List<UserDto> getUsers(int page, int limit);
+    UserDto create(UserDto userDto);
+    UserDto getUserByEmail(String email);
+    UserDto getUserByUserId(String id);
+    UserDto updateUser(String id, UserDto userDto);
+    void DeleteUser(String id);
+    boolean verifyEmailToken(String token);
+    boolean requestPasswordReset(String email);
+    boolean resetPassword(String password, String token);
 }

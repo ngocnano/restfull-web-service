@@ -1,5 +1,7 @@
 package com.ngoctm.app.ws.controller;
 
+import com.ngoctm.app.ws.model.request.PasswordResetModel;
+import com.ngoctm.app.ws.model.request.PasswordResetRequestModel;
 import com.ngoctm.app.ws.model.request.UserDetailRequestModel;
 import com.ngoctm.app.ws.model.response.AddressRest;
 import com.ngoctm.app.ws.model.response.UserRest;
@@ -155,6 +157,39 @@ public class UserController {
         HttpStatus httpStatus;
         String content;
         if(verification){
+            httpStatus = HttpStatus.OK;
+            content = "Successful";
+        } else {
+            httpStatus = HttpStatus.FORBIDDEN;
+            content = "fail";
+        }
+        return new ResponseEntity<>(content, httpStatus);
+    }
+
+    @PostMapping(value = "/request-reset-password",
+            consumes = {MediaType.APPLICATION_XML_VALUE, MediaType.APPLICATION_JSON_VALUE},
+            produces = {MediaType.APPLICATION_XML_VALUE, MediaType.APPLICATION_JSON_VALUE})
+    public ResponseEntity<String> requestResetPassword(@RequestBody PasswordResetRequestModel requestModel){
+        boolean returnValue = userService.requestPasswordReset(requestModel.getEmail());
+        HttpStatus httpStatus;
+        String content;
+        if(returnValue){
+            httpStatus = HttpStatus.OK;
+            content = "Successful";
+        } else {
+            httpStatus = HttpStatus.FORBIDDEN;
+            content = "fail";
+        }
+        return new ResponseEntity<>(content, httpStatus);
+    }
+
+    @PostMapping(value = "/reset-password",
+            produces = {MediaType.APPLICATION_XML_VALUE, MediaType.APPLICATION_JSON_VALUE})
+    public ResponseEntity<String> resetPassword(@RequestBody PasswordResetModel passwordResetModel){
+        boolean returnValue = userService.resetPassword(passwordResetModel.getNewPassword(), passwordResetModel.getToken());
+        HttpStatus httpStatus;
+        String content;
+        if(returnValue){
             httpStatus = HttpStatus.OK;
             content = "Successful";
         } else {
