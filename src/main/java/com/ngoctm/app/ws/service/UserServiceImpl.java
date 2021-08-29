@@ -5,7 +5,8 @@ import com.ngoctm.app.ws.entity.UserEntity;
 import com.ngoctm.app.ws.exceptions.UserServiceException;
 import com.ngoctm.app.ws.model.response.ErrorMessages;
 import com.ngoctm.app.ws.repositories.UserRepository;
-import com.ngoctm.app.ws.shared.dto.AddressDto;
+import com.ngoctm.app.ws.shared.AmazonSES;
+import com.ngoctm.app.ws.shared.Utils;
 import com.ngoctm.app.ws.shared.dto.UserDto;
 import org.modelmapper.ModelMapper;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -61,6 +62,8 @@ public class UserServiceImpl implements UserService{
         UserEntity userEntity = modelMapper.map(userDto, UserEntity.class);
         userEntity.setUserId(UUID.randomUUID().toString());
         userEntity.setEncryptedPassword(bCryptPasswordEncoder.encode(userDto.getPassword()));
+        userEntity.setEmailVerificationToken(Utils.generateEmailVerificationToken(userEntity.getUserId()));
+        userEntity.setEmailVerificationStatus(false);
 
         for(AddressEntity addressEntity : userEntity.getAddresses()){
             addressEntity.setIdAddress(UUID.randomUUID().toString());
@@ -70,6 +73,10 @@ public class UserServiceImpl implements UserService{
         UserEntity storedUser = userRepository.save(userEntity);
 
         UserDto returnValue = modelMapper.map(storedUser, UserDto.class);
+
+        //send email
+        AmazonSES amazonSES = new AmazonSES();
+        amazonSES.sendVerifyEmail(returnValue);
 
         return returnValue;
     }
@@ -119,9 +126,27 @@ public class UserServiceImpl implements UserService{
     }
 
     @Override
+    public boolean verifyEmailToken(String token) {
+        boolean returnValue = false;
+        UserEntity userEntity = userRepository.findByEmailVerificationToken(token);
+        if(userEntity != null){
+            boolean hasTokenExpire = Utils.hasTokenExpired(token);
+            if(!hasTokenExpire){
+                userEntity.setEmailVerificationToken(null);
+                userEntity.setEmailVerificationStatus(Boolean.TRUE);
+                userRepository.save(userEntity);
+                return returnValue;
+            }
+        }
+
+        return returnValue;
+    }
+
+    @Override
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
         UserEntity userEntity = userRepository.findByEmail(email);
         if(userEntity == null) throw new UserServiceException(ErrorMessages.NO_RECORD_FOUND.getMessage());
-        return new User(userEntity.getEmail(), userEntity.getEncryptedPassword(), new ArrayList<>());
+        return new User(userEntity.getEmail(), userEntity.getEncryptedPassword(),
+                userEntity.getEmailVerificationStatus(), true, true, true, new ArrayList<>());
     }
 }

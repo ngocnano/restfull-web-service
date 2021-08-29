@@ -147,4 +147,21 @@ public class UserController {
         return new ResponseEntity<>(addressRest, HttpStatus.OK);
     }
 
+    @GetMapping(value = "/email",
+            produces = {MediaType.APPLICATION_XML_VALUE, MediaType.APPLICATION_JSON_VALUE})
+    public ResponseEntity<String> verifyEmailToken(@RequestParam("token") String token) {
+
+        boolean verification = userService.verifyEmailToken(token);
+        HttpStatus httpStatus;
+        String content;
+        if(verification){
+            httpStatus = HttpStatus.OK;
+            content = "Successful";
+        } else {
+            httpStatus = HttpStatus.FORBIDDEN;
+            content = "fail";
+        }
+        return new ResponseEntity<>(content, httpStatus);
+    }
+
 }
